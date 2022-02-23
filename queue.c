@@ -246,7 +246,15 @@ bool q_delete_dup(struct list_head *head)
  */
 void q_swap(struct list_head *head)
 {
-    // https://leetcode.com/problems/swap-nodes-in-pairs/
+    struct list_head *node, *safe;
+    list_for_each_safe (node, safe, head) {
+        if (node->next == head) {
+            return;
+        }
+        list_del(node);
+        list_add(node, safe);
+        safe = node->next;
+    }
 }
 
 /*
