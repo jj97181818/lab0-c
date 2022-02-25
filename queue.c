@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -286,4 +287,63 @@ void q_reverse(struct list_head *head)
  * No effect if q is NULL or empty. In addition, if q has only one
  * element, do nothing.
  */
-void q_sort(struct list_head *head) {}
+struct list_head *merge(struct list_head *l1, struct list_head *l2)
+{
+    struct list_head *head = NULL;
+    struct list_head **ptr = &head;
+
+    for (; l1 && l2; ptr = &(*ptr)->next) {
+        if (strcmp(list_entry(l1, element_t, list)->value,
+                   list_entry(l2, element_t, list)->value) < 0) {
+            *ptr = l1;
+            l1 = l1->next;
+        } else {
+            *ptr = l2;
+            l2 = l2->next;
+        }
+    }
+    *ptr = (struct list_head *) ((uintptr_t) l1 | (uintptr_t) l2);
+    return head;
+}
+struct list_head *mergeSortList(struct list_head *head)
+{
+    if (!head || !head->next) {
+        return head;
+    }
+
+    struct list_head *fast = head->next, *slow = head;
+
+    while (fast && fast->next) {
+        fast = fast->next->next;
+        slow = slow->next;
+    }
+    fast = slow->next;
+    slow->next = NULL;
+    slow = head;
+
+    struct list_head *l1 = mergeSortList(slow);
+    struct list_head *l2 = mergeSortList(fast);
+
+    return merge(l1, l2);
+}
+
+void q_sort(struct list_head *head)
+{
+    if (!head || list_empty(head)) {
+        return;
+    }
+
+    head->prev->next = NULL;
+    head->next = mergeSortList(head->next);
+
+    struct list_head *cur = head->next;
+    struct list_head *prev = head;
+
+    while (cur != NULL) {
+        cur->prev = prev;
+        prev = cur;
+        cur = cur->next;
+    }
+    prev->next = head;
+    head->prev = prev;
+}
