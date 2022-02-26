@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "harness.h"
 #include "queue.h"
@@ -348,4 +349,30 @@ void q_sort(struct list_head *head)
     }
     prev->next = head;
     head->prev = prev;
+}
+
+void q_shuffle(struct list_head *head)
+{
+    if (!head || list_empty(head)) {
+        return;
+    }
+
+    srand(time(NULL));
+    struct list_head *old;
+    struct list_head *new = head;
+
+    for (int len = q_size(head); len > 0; len--) {
+        int random = rand() % len;
+        old = head->next;
+
+        for (int i = 0; i < random; i++) {
+            old = old->next;
+        }
+        new = new->prev;
+
+        char *temp = list_entry(old, element_t, list)->value;
+        list_entry(old, element_t, list)->value =
+            list_entry(new, element_t, list)->value;
+        list_entry(new, element_t, list)->value = temp;
+    }
 }
