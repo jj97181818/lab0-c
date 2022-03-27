@@ -270,18 +270,13 @@ void q_swap(struct list_head *head)
  */
 void q_reverse(struct list_head *head)
 {
-    if (!head || !list_empty(head)) {
+    if (!head || list_empty(head)) {
         return;
     }
     struct list_head *node, *safe;
-    struct list_head *last = head->prev;
-
     list_for_each_safe (node, safe, head) {
-        if (node == last) {
-            return;
-        }
         list_del(node);
-        list_add(node, last);
+        list_add(node, head);
     }
 }
 
