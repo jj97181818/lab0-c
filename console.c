@@ -403,8 +403,20 @@ int listenfd;
 static bool do_web(int argc, char *argv[])
 {
     int port = 9999;
+    if (argc == 2) {
+        if (argv[1][0] >= '0' && argv[1][0] <= '9') {
+            port = atoi(argv[1]);
+        }
+    }
+
     listenfd = open_listenfd(port);
-    noise = false;
+    if (listenfd > 0) {
+        printf("listen on port %d, fd is %d\n", port, listenfd);
+        noise = false;
+    } else {
+        perror("ERROR");
+        exit(listenfd);
+    }
     return true;
 }
 
@@ -597,6 +609,7 @@ int cmd_select(int nfds,
         FD_CLR(infd, readfds);
         result--;
 
+        set_echo(0);
         char *cmdline;
         cmdline = readline();
         if (cmdline)
