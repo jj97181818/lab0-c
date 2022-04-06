@@ -182,6 +182,26 @@ static ssize_t rio_read(rio_t *rp, char *usrbuf, size_t n)
     return cnt;
 }
 
+ssize_t writen(int fd, void *usrbuf, size_t n)
+{
+    size_t nleft = n;
+    char *bufp = usrbuf;
+
+    while (nleft > 0) {
+        ssize_t nwritten = write(fd, bufp, nleft);
+        if (nwritten <= 0) {
+            if (errno == EINTR) { /* interrupted by sig handler return */
+                nwritten = 0;     /* and call write() again */
+            } else {
+                return -1; /* errorno set by write() */
+            }
+        }
+        nleft -= nwritten;
+        bufp += nwritten;
+    }
+    return n;
+}
+
 /*
  * rio_readlineb - robustly read a text line (buffered)
  */
@@ -226,6 +246,18 @@ static const char *get_mime_type(char *filename)
     return default_mime_type;
 }
 
+void send_response(int out_fd)
+{
+    char *buf =
+        "HTTP/1.1 200 OK\r\n%s%s%s%s%s%s"
+        "Content-Type: text/html\r\n\r\n"
+        "<html><head><style>"
+        "body{font-family: monospace; font-size: 13px;}"
+        "td {padding: 1.5px 6px;}"
+        "</style><link rel=\"shortcut icon\" href=\"#\">"
+        "</head><body><table>\n";
+    writen(out_fd, buf, strlen(buf));
+}
 
 int open_listenfd(int port)
 {
@@ -341,7 +373,6 @@ char *process(int fd, struct sockaddr_in *clientaddr)
     http_request req;
     parse_request(fd, &req);
     int status = 200;
-    ;
 
     char *p = req.filename;
     /* Change '/' to ' ' */
@@ -356,6 +387,8 @@ char *process(int fd, struct sockaddr_in *clientaddr)
 #endif
     char *ret = malloc(strlen(req.filename) + 1);
     strncpy(ret, req.filename, strlen(req.filename) + 1);
+
+    send_response(fd);
 
     return ret;
 }
