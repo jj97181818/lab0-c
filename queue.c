@@ -352,22 +352,23 @@ void q_shuffle(struct list_head *head)
         return;
     }
 
-    srand(time(NULL));
-    struct list_head *old;
-    struct list_head *new = head;
+    struct list_head *node;
+    struct list_head *last = head;
 
     for (int len = q_size(head); len > 0; len--) {
         int random = rand() % len;
-        old = head->next;
+        node = head->next;
 
         for (int i = 0; i < random; i++) {
-            old = old->next;
+            node = node->next;
         }
-        new = new->prev;
+        last = last->prev;
 
-        char *temp = list_entry(old, element_t, list)->value;
-        list_entry(old, element_t, list)->value =
-            list_entry(new, element_t, list)->value;
-        list_entry(new, element_t, list)->value = temp;
+        element_t *choose_entry = list_entry(node, element_t, list);
+        element_t *last_entry = list_entry(last, element_t, list);
+
+        char *temp = choose_entry->value;
+        choose_entry->value = last_entry->value;
+        last_entry->value = temp;
     }
 }
