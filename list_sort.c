@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0
-#include <linux/bug.h>
-#include <linux/compiler.h>
-#include <linux/export.h>
-#include <linux/kernel.h>
-#include <linux/list.h>
-#include <linux/list_sort.h>
-#include <linux/string.h>
+#include "list_sort.h"
+#include <stdint.h>
+#include "list.h"
+
+/* From linux/compiler.h*/
+#define likely(x) __builtin_expect(!!(x), 1)
+#define unlikely(x) __builtin_expect(!!(x), 0)
 
 /*
  * Returns a list organized in an intermediate format suited
@@ -56,7 +56,7 @@ __attribute__((nonnull(2, 3, 4, 5))) static void merge_final(
     struct list_head *b)
 {
     struct list_head *tail = head;
-    u8 count = 0;
+    uint8_t count = 0;
 
     for (;;) {
         /* if equal, take 'a' -- important for sort stability */
@@ -254,4 +254,3 @@ __attribute__((nonnull(2, 3))) void list_sort(void *priv,
     /* The final merge, rebuilding prev links */
     merge_final(priv, cmp, head, pending, list);
 }
-EXPORT_SYMBOL(list_sort);

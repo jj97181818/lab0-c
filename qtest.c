@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include "dudect/fixture.h"
 #include "list.h"
+#include "list_sort.h"
 
 /* Our program needs to use regular malloc/free */
 #define INTERNAL 1
@@ -69,6 +70,9 @@ static int fail_limit = BIG_LIST;
 static int fail_count = 0;
 
 static int string_length = MAXSTRING;
+
+/* original written sort: 0, lib/list_sort.c: 1 */
+static int sortmode = 0;
 
 #define MIN_RANDSTR_LEN 5
 #define MAX_RANDSTR_LEN 10
@@ -598,6 +602,12 @@ static bool do_size(int argc, char *argv[])
     return ok && !error_check();
 }
 
+static int cmp(void *priv, const struct list_head *a, const struct list_head *b)
+{
+    return strcmp(list_entry(a, element_t, list)->value,
+                  list_entry(b, element_t, list)->value);
+}
+
 bool do_sort(int argc, char *argv[])
 {
     if (argc != 1) {
@@ -615,8 +625,13 @@ bool do_sort(int argc, char *argv[])
     error_check();
 
     set_noallocate_mode(true);
-    if (exception_setup(true))
-        q_sort(l_meta.l);
+    if (exception_setup(true)) {
+        if (sortmode == 0) {
+            q_sort(l_meta.l);
+        } else {
+            list_sort(NULL, l_meta.l, cmp);
+        }
+    }
     exception_cancel();
     set_noallocate_mode(false);
 
@@ -822,6 +837,9 @@ static void console_init()
               NULL);
     add_param("fail", &fail_limit,
               "Number of times allow queue operations to return false", NULL);
+    add_param("sort", &sortmode,
+              "Switch between lib/list_sort.c and the original written sort",
+              NULL);
 }
 
 /* Signal handlers */
