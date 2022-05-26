@@ -559,6 +559,7 @@ static bool cmd_done()
  * nfds should be set to the maximum file descriptor for network sockets.
  * If nfds == 0, this indicates that there is no pending network activity
  */
+int connfd;
 int cmd_select(int nfds,
                fd_set *readfds,
                fd_set *writefds,
@@ -617,12 +618,14 @@ int cmd_select(int nfds,
     } else if (readfds && FD_ISSET(listenfd, readfds)) {
         FD_CLR(listenfd, readfds);
         result--;
-        int connfd;
         struct sockaddr_in clientaddr;
         socklen_t clientlen = sizeof(clientaddr);
         connfd = accept(listenfd, (SA *) &clientaddr, &clientlen);
 
         char *p = process(connfd, &clientaddr);
+        char *buffer = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n";
+        send_response(connfd, buffer);
+
         if (p)
             interpret_cmd(p);
         free(p);

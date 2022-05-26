@@ -9,4 +9,6 @@ int open_listenfd(int port);
 
 char *process(int fd, struct sockaddr_in *clientaddr);
 
+void send_response(int out_fd, char *buffer);
+
 #endif

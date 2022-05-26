@@ -246,16 +246,8 @@ static const char *get_mime_type(char *filename)
     return default_mime_type;
 }
 
-void send_response(int out_fd)
+void send_response(int out_fd, char *buf)
 {
-    char *buf =
-        "HTTP/1.1 200 OK\r\n%s%s%s%s%s%s"
-        "Content-Type: text/html\r\n\r\n"
-        "<html><head><style>"
-        "body{font-family: monospace; font-size: 13px;}"
-        "td {padding: 1.5px 6px;}"
-        "</style><link rel=\"shortcut icon\" href=\"#\">"
-        "</head><body><table>\n";
     writen(out_fd, buf, strlen(buf));
 }
 
@@ -387,8 +379,6 @@ char *process(int fd, struct sockaddr_in *clientaddr)
 #endif
     char *ret = malloc(strlen(req.filename) + 1);
     strncpy(ret, req.filename, strlen(req.filename) + 1);
-
-    send_response(fd);
 
     return ret;
 }

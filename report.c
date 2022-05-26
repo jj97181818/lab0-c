@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #include "report.h"
+#include "tinyweb.h"
 
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
 
@@ -54,9 +55,9 @@ void report_event(message_t msg, char *fmt, ...)
 {
     va_list ap;
     bool fatal = msg == MSG_FATAL;
-    char *msg_name = msg == MSG_WARN    ? "WARNING"
-                     : msg == MSG_ERROR ? "ERROR"
-                                        : "FATAL ERROR";
+    char *msg_name = msg == MSG_WARN
+                         ? "WARNING"
+                         : msg == MSG_ERROR ? "ERROR" : "FATAL ERROR";
     int level = msg == MSG_WARN ? 2 : msg == MSG_ERROR ? 1 : 0;
     if (verblevel < level)
         return;
@@ -88,11 +89,14 @@ void report_event(message_t msg, char *fmt, ...)
     }
 }
 
+extern int connfd;
 void report(int level, char *fmt, ...)
 {
     if (!verbfile)
         init_files(stdout, stdout);
 
+    int bufferSize = 4096;
+    char buffer[bufferSize];
     if (level <= verblevel) {
         va_list ap;
         va_start(ap, fmt);
@@ -108,6 +112,15 @@ void report(int level, char *fmt, ...)
             fflush(logfile);
             va_end(ap);
         }
+        va_start(ap, fmt);
+        vsnprintf(buffer, bufferSize, fmt, ap);
+        va_end(ap);
+    }
+    if (connfd) {
+        int len = strlen(buffer);
+        buffer[len] = '\n';
+        buffer[len + 1] = '\0';
+        send_response(connfd, buffer);
     }
 }
 
@@ -116,6 +129,8 @@ void report_noreturn(int level, char *fmt, ...)
     if (!verbfile)
         init_files(stdout, stdout);
 
+    int bufferSize = 4096;
+    char buffer[bufferSize];
     if (level <= verblevel) {
         va_list ap;
         va_start(ap, fmt);
@@ -129,6 +144,12 @@ void report_noreturn(int level, char *fmt, ...)
             fflush(logfile);
             va_end(ap);
         }
+        va_start(ap, fmt);
+        vsnprintf(buffer, bufferSize, fmt, ap);
+        va_end(ap);
+    }
+    if (connfd) {
+        send_response(connfd, buffer);
     }
 }
 
