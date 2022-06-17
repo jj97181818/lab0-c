@@ -83,61 +83,12 @@ static bool show_queue(int vlevel);
 
 static bool do_free(int argc, char *argv[])
 {
-    if (argc != 1) {
-        report(1, "%s takes no arguments", argv[0]);
-        return false;
-    }
-
-    bool ok = true;
-    if (!l_meta.l)
-        report(3, "Warning: Calling free on null queue");
-    error_check();
-
-    if (lcnt > big_list_size)
-        set_cautious_mode(false);
-    if (exception_setup(true))
-        q_free(l_meta.l);
-    exception_cancel();
-    set_cautious_mode(true);
-
-    l_meta.size = 0;
-    l_meta.l = NULL;
-    lcnt = 0;
-    show_queue(3);
-
-    size_t bcnt = allocation_check();
-    if (bcnt > 0) {
-        report(1, "ERROR: Freed queue, but %lu blocks are still allocated",
-               bcnt);
-        ok = false;
-    }
-
-    return ok && !error_check();
+    return 0;
 }
 
 static bool do_new(int argc, char *argv[])
 {
-    if (argc != 1) {
-        report(1, "%s takes no arguments", argv[0]);
-        return false;
-    }
-
-    bool ok = true;
-    if (l_meta.l) {
-        report(3, "Freeing old queue");
-        ok = do_free(argc, argv);
-    }
-    error_check();
-
-    if (exception_setup(true)) {
-        l_meta.l = q_new();
-        l_meta.size = 0;
-    }
-    exception_cancel();
-    lcnt = 0;
-    show_queue(3);
-
-    return ok && !error_check();
+    return 0;
 }
 
 /*
@@ -146,655 +97,95 @@ static bool do_new(int argc, char *argv[])
  */
 static void fill_rand_string(char *buf, size_t buf_size)
 {
-    size_t len = 0;
-    while (len < MIN_RANDSTR_LEN)
-        len = rand() % buf_size;
-
-    for (size_t n = 0; n < len; n++) {
-        buf[n] = charset[rand() % (sizeof charset - 1)];
-    }
-    buf[len] = '\0';
+    
 }
 
 /* insert head */
 static bool do_ih(int argc, char *argv[])
 {
-    if (simulation) {
-        if (argc != 1) {
-            report(1, "%s does not need arguments in simulation mode", argv[0]);
-            return false;
-        }
-        bool ok = is_insert_head_const();
-        if (!ok) {
-            report(1, "ERROR: Probably not constant time");
-            return false;
-        }
-        report(1, "Probably constant time");
-        return ok;
-    }
-
-    char *lasts = NULL;
-    char randstr_buf[MAX_RANDSTR_LEN];
-    int reps = 1;
-    bool ok = true, need_rand = false;
-    if (argc != 2 && argc != 3) {
-        report(1, "%s needs 1-2 arguments", argv[0]);
-        return false;
-    }
-
-    char *inserts = argv[1];
-    if (argc == 3) {
-        if (!get_int(argv[2], &reps)) {
-            report(1, "Invalid number of insertions '%s'", argv[2]);
-            return false;
-        }
-    }
-
-    if (!strcmp(inserts, "RAND")) {
-        need_rand = true;
-        inserts = randstr_buf;
-    }
-
-    if (!l_meta.l)
-        report(3, "Warning: Calling insert head on null queue");
-    error_check();
-
-    if (exception_setup(true)) {
-        for (int r = 0; ok && r < reps; r++) {
-            if (need_rand)
-                fill_rand_string(randstr_buf, sizeof(randstr_buf));
-            bool rval = q_insert_head(l_meta.l, inserts);
-            if (rval) {
-                lcnt++;
-                l_meta.size++;
-                char *cur_inserts =
-                    list_entry(l_meta.l->next, element_t, list)->value;
-                if (!cur_inserts) {
-                    report(1, "ERROR: Failed to save copy of string in queue");
-                    ok = false;
-                } else if (r == 0 && inserts == cur_inserts) {
-                    report(1,
-                           "ERROR: Need to allocate and copy string for new "
-                           "queue element");
-                    ok = false;
-                    break;
-                } else if (r == 1 && lasts == cur_inserts) {
-                    report(1,
-                           "ERROR: Need to allocate separate string for each "
-                           "queue element");
-                    ok = false;
-                    break;
-                }
-                lasts = cur_inserts;
-            } else {
-                fail_count++;
-                if (fail_count < fail_limit)
-                    report(2, "Insertion of %s failed", inserts);
-                else {
-                    report(1,
-                           "ERROR: Insertion of %s failed (%d failures total)",
-                           inserts, fail_count);
-                    ok = false;
-                }
-            }
-            ok = ok && !error_check();
-        }
-    }
-    exception_cancel();
-
-    show_queue(3);
-    return ok;
+    return 0;
 }
 
 /* insert tail */
 static bool do_it(int argc, char *argv[])
 {
-    if (simulation) {
-        if (argc != 1) {
-            report(1, "%s does not need arguments in simulation mode", argv[0]);
-            return false;
-        }
-        bool ok = is_insert_tail_const();
-        if (!ok) {
-            report(1, "ERROR: Probably not constant time");
-            return false;
-        }
-        report(1, "Probably constant time");
-        return ok;
-    }
-
-    char randstr_buf[MAX_RANDSTR_LEN];
-    int reps = 1;
-    bool ok = true, need_rand = false;
-    if (argc != 2 && argc != 3) {
-        report(1, "%s needs 1-2 arguments", argv[0]);
-        return false;
-    }
-
-    char *inserts = argv[1];
-    if (argc == 3) {
-        if (!get_int(argv[2], &reps)) {
-            report(1, "Invalid number of insertions '%s'", argv[2]);
-            return false;
-        }
-    }
-
-    if (!strcmp(inserts, "RAND")) {
-        need_rand = true;
-        inserts = randstr_buf;
-    }
-
-    if (!l_meta.l)
-        report(3, "Warning: Calling insert tail on null queue");
-    error_check();
-
-    if (exception_setup(true)) {
-        for (int r = 0; ok && r < reps; r++) {
-            if (need_rand)
-                fill_rand_string(randstr_buf, sizeof(randstr_buf));
-            bool rval = q_insert_tail(l_meta.l, inserts);
-            if (rval) {
-                lcnt++;
-                l_meta.size++;
-                char *cur_inserts =
-                    list_entry(l_meta.l->prev, element_t, list)->value;
-                if (!cur_inserts) {
-                    report(1, "ERROR: Failed to save copy of string in queue");
-                    ok = false;
-                }
-            } else {
-                fail_count++;
-                if (fail_count < fail_limit)
-                    report(2, "Insertion of %s failed", inserts);
-                else {
-                    report(1,
-                           "ERROR: Insertion of %s failed (%d failures total)",
-                           inserts, fail_count);
-                    ok = false;
-                }
-            }
-            ok = ok && !error_check();
-        }
-    }
-    exception_cancel();
-    show_queue(3);
-    return ok;
+    return 0;
 }
 
 static bool do_remove(int option, int argc, char *argv[])
 {
-    // option 0 is for remove head; option 1 is for remove tail
-
-    /* FIXME: It is known that both functions is_remove_tail_const() and
-     * is_remove_head_const() can not pass dudect on Arm64. We shall figure
-     * out the exact reasons and resolve later.
-     */
-#if !defined(__aarch64__)
-    if (simulation) {
-        if (argc != 1) {
-            report(1, "%s does not need arguments in simulation mode", argv[0]);
-            return false;
-        }
-        bool ok = option ? is_remove_tail_const() : is_remove_head_const();
-        if (!ok) {
-            report(1, "ERROR: Probably not constant time");
-            return false;
-        }
-        report(1, "Probably constant time");
-        return ok;
-    }
-#endif
-
-    if (argc != 1 && argc != 2) {
-        report(1, "%s needs 0-1 arguments", argv[0]);
-        return false;
-    }
-
-    char *removes = malloc(string_length + STRINGPAD + 1);
-    if (!removes) {
-        report(1,
-               "INTERNAL ERROR.  Could not allocate space for removed strings");
-        return false;
-    }
-
-    char *checks = malloc(string_length + 1);
-    if (!checks) {
-        report(1,
-               "INTERNAL ERROR.  Could not allocate space for removed strings");
-        free(removes);
-        return false;
-    }
-
-    bool check = argc > 1;
-    bool ok = true;
-    if (check) {
-        strncpy(checks, argv[1], string_length + 1);
-        checks[string_length] = '\0';
-    }
-
-    removes[0] = '\0';
-    memset(removes + 1, 'X', string_length + STRINGPAD - 1);
-    removes[string_length + STRINGPAD] = '\0';
-
-    if (!l_meta.size)
-        report(3, "Warning: Calling remove head on empty queue");
-    error_check();
-
-    element_t *re = NULL;
-    if (exception_setup(true))
-        re = option ? q_remove_tail(l_meta.l, removes, string_length + 1)
-                    : q_remove_head(l_meta.l, removes, string_length + 1);
-    exception_cancel();
-
-    bool is_null = re ? false : true;
-
-    if (!is_null) {
-        // q_remove_head and q_remove_tail are not responsible for releasing
-        // node
-        q_release_element(re);
-
-        removes[string_length + STRINGPAD] = '\0';
-        if (removes[0] == '\0') {
-            report(1, "ERROR: Failed to store removed value");
-            ok = false;
-        }
-
-        /*
-         * Check whether padding in array removes are still initial value 'X'.
-         * If there's other character in padding, it's overflowed.
-         */
-        int i = string_length + 1;
-        while ((i < string_length + STRINGPAD) && (removes[i] == 'X'))
-            i++;
-        if (i != string_length + STRINGPAD) {
-            report(1,
-                   "ERROR: copying of string in remove_head overflowed "
-                   "destination buffer.");
-            ok = false;
-        } else {
-            report(2, "Removed %s from queue", removes);
-        }
-        lcnt--;
-        l_meta.size--;
-    } else {
-        fail_count++;
-        if (!check && fail_count < fail_limit) {
-            report(2, "Removal from queue failed");
-        } else {
-            report(1, "ERROR: Removal from queue failed (%d failures total)",
-                   fail_count);
-            ok = false;
-        }
-    }
-
-    if (ok && check && strcmp(removes, checks)) {
-        report(1, "ERROR: Removed value %s != expected value %s", removes,
-               checks);
-        ok = false;
-    }
-
-    show_queue(3);
-
-    free(removes);
-    free(checks);
-    return ok && !error_check();
+    return 0;
 }
 
 static inline bool do_rh(int argc, char *argv[])
 {
-    return do_remove(0, argc, argv);
+    return 0;
 }
 
 static inline bool do_rt(int argc, char *argv[])
 {
-    return do_remove(1, argc, argv);
+    return 0;
 }
 
 /* remove head quietly */
 static bool do_rhq(int argc, char *argv[])
 {
-    if (argc != 1) {
-        report(1, "%s takes no arguments", argv[0]);
-        return false;
-    }
-
-    bool ok = true;
-    if (!l_meta.size)
-        report(3, "Warning: Calling remove head on empty queue");
-    error_check();
-
-    element_t *re = NULL;
-
-    if (exception_setup(true))
-        re = q_remove_head(l_meta.l, NULL, 0);
-    exception_cancel();
-
-    if (re) {
-        // q_remove_head and q_remove_tail are not responsible for releasing
-        // node
-        q_release_element(re);
-
-        report(2, "Removed element from queue");
-        lcnt--;
-        l_meta.size--;
-    } else {
-        fail_count++;
-        if (fail_count < fail_limit)
-            report(2, "Removal failed");
-        else {
-            report(1, "ERROR: Removal failed (%d failures total)", fail_count);
-            ok = false;
-        }
-    }
-
-    show_queue(3);
-    return ok && !error_check();
+    return 0;
 }
 
 static bool do_dedup(int argc, char *argv[])
 {
-    if (argc != 1) {
-        report(1, "%s takes no arguments", argv[0]);
-        return false;
-    }
-
-    bool ok = true;
-    // set_noallocate_mode(true);
-    if (exception_setup(true))
-        ok = q_delete_dup(l_meta.l);
-    exception_cancel();
-
-    // set_noallocate_mode(false);
-
-    if (!ok) {
-        report(1, "ERROR: Calling delete duplicate on null queue");
-        return false;
-    }
-
-    element_t *item = NULL;
-    if (l_meta.size) {
-        list_for_each_entry (item, l_meta.l, list) {
-            element_t *next_item;
-            if (item->list.next == l_meta.l)
-                break;
-            next_item = list_entry(item->list.next, element_t, list);
-
-            // assume queue has been sorted
-            if (strcmp(item->value, next_item->value) == 0) {
-                report(1, "ERROR: Contain duplicate string on queue");
-                ok = false;
-                break;
-            }
-        }
-    }
-    show_queue(3);
-
-    return ok && !error_check();
+    return 0;
 }
 
 static bool do_reverse(int argc, char *argv[])
 {
-    if (argc != 1) {
-        report(1, "%s takes no arguments", argv[0]);
-        return false;
-    }
-
-    if (!l_meta.l)
-        report(3, "Warning: Calling reverse on null queue");
-    error_check();
-
-    set_noallocate_mode(true);
-    if (exception_setup(true))
-        q_reverse(l_meta.l);
-    exception_cancel();
-
-    set_noallocate_mode(false);
-    show_queue(3);
-    return !error_check();
+    return 0;
 }
 
 static bool do_size(int argc, char *argv[])
 {
-    if (argc != 1 && argc != 2) {
-        report(1, "%s takes 0-1 arguments", argv[0]);
-        return false;
-    }
-
-    int reps = 1;
-    bool ok = true;
-    if (argc != 1 && argc != 2) {
-        report(1, "%s needs 0-1 arguments", argv[0]);
-        return false;
-    }
-
-    if (argc == 2) {
-        if (!get_int(argv[1], &reps)) {
-            report(1, "Invalid number of calls to size '%s'", argv[2]);
-        }
-    }
-
-    int cnt = 0;
-    if (!l_meta.l)
-        report(3, "Warning: Calling size on null queue");
-    error_check();
-
-    if (exception_setup(true)) {
-        for (int r = 0; ok && r < reps; r++) {
-            cnt = q_size(l_meta.l);
-            ok = ok && !error_check();
-        }
-    }
-    exception_cancel();
-
-    if (ok) {
-        if (lcnt == cnt) {
-            report(2, "Queue size = %d", cnt);
-        } else {
-            report(1,
-                   "ERROR: Computed queue size as %d, but correct value is %d",
-                   cnt, (int) lcnt);
-            ok = false;
-        }
-    }
-
-    show_queue(3);
-
-    return ok && !error_check();
+    return 0;
 }
 
 static int cmp(void *priv, const struct list_head *a, const struct list_head *b)
 {
-    return strcmp(list_entry(a, element_t, list)->value,
-                  list_entry(b, element_t, list)->value);
+    return 0;
 }
 
 bool do_sort(int argc, char *argv[])
 {
-    if (argc != 1) {
-        report(1, "%s takes no arguments", argv[0]);
-        return false;
-    }
-
-    if (!l_meta.l)
-        report(3, "Warning: Calling sort on null queue");
-    error_check();
-
-    int cnt = q_size(l_meta.l);
-    if (cnt < 2)
-        report(3, "Warning: Calling sort on single node");
-    error_check();
-
-    set_noallocate_mode(true);
-    if (exception_setup(true)) {
-        if (sortmode == 0) {
-            q_sort(l_meta.l);
-        } else {
-            list_sort(NULL, l_meta.l, cmp);
-        }
-    }
-    exception_cancel();
-    set_noallocate_mode(false);
-
-    bool ok = true;
-    if (l_meta.size) {
-        for (struct list_head *cur_l = l_meta.l->next;
-             cur_l != l_meta.l && --cnt; cur_l = cur_l->next) {
-            /* Ensure each element in ascending order */
-            /* FIXME: add an option to specify sorting order */
-            element_t *item, *next_item;
-            item = list_entry(cur_l, element_t, list);
-            next_item = list_entry(cur_l->next, element_t, list);
-            if (strcasecmp(item->value, next_item->value) > 0) {
-                report(1, "ERROR: Not sorted in ascending order");
-                ok = false;
-                break;
-            }
-        }
-    }
-
-    show_queue(3);
-    return ok && !error_check();
+    return 0;
 }
 
 static bool do_dm(int argc, char *argv[])
 {
-    if (argc != 1) {
-        report(1, "%s takes no arguments", argv[0]);
-        return false;
-    }
-
-    if (!l_meta.l)
-        report(3, "Warning: Try to access null queue");
-    error_check();
-
-    bool ok = true;
-    if (exception_setup(true))
-        ok = q_delete_mid(l_meta.l);
-    exception_cancel();
-
-    show_queue(3);
-    return ok && !error_check();
+    return 0;
 }
 
 static bool do_swap(int argc, char *argv[])
 {
-    if (argc != 1) {
-        report(1, "%s takes no arguments", argv[0]);
-        return false;
-    }
-
-    if (!l_meta.l)
-        report(3, "Warning: Try to access null queue");
-    error_check();
-
-    set_noallocate_mode(true);
-    if (exception_setup(true))
-        q_swap(l_meta.l);
-    exception_cancel();
-
-    set_noallocate_mode(false);
-
-    show_queue(3);
-    return !error_check();
+    return 0;
 }
 
 static bool is_circular()
 {
-    struct list_head *cur = l_meta.l->next;
-    while (cur != l_meta.l) {
-        if (!cur)
-            return false;
-        cur = cur->next;
-    }
-
-    cur = l_meta.l->prev;
-    while (cur != l_meta.l) {
-        if (!cur)
-            return false;
-        cur = cur->prev;
-    }
-    return true;
+    return 0;
 }
 
 static bool show_queue(int vlevel)
 {
-    bool ok = true;
-    if (verblevel < vlevel)
-        return true;
-
-    int cnt = 0;
-    if (!l_meta.l) {
-        report(vlevel, "l = NULL");
-        return true;
-    }
-
-    if (!is_circular()) {
-        report(vlevel, "ERROR:  Queue is not doubly circular");
-        return false;
-    }
-
-    report_noreturn(vlevel, "l = [");
-
-    struct list_head *ori = l_meta.l;
-    struct list_head *cur = l_meta.l->next;
-
-    if (exception_setup(true)) {
-        while (ok && ori != cur && cnt < lcnt) {
-            element_t *e = list_entry(cur, element_t, list);
-            if (cnt < big_list_size)
-                report_noreturn(vlevel, cnt == 0 ? "%s" : " %s", e->value);
-            cnt++;
-            cur = cur->next;
-            ok = ok && !error_check();
-        }
-    }
-    exception_cancel();
-
-    if (!ok) {
-        report(vlevel, " ... ]");
-        return false;
-    }
-
-    if (cur == ori) {
-        if (cnt <= big_list_size)
-            report(vlevel, "]");
-        else
-            report(vlevel, " ... ]");
-    } else {
-        report(vlevel, " ... ]");
-        report(vlevel, "ERROR:  Queue has more than %d elements", lcnt);
-        ok = false;
-    }
-
-    return ok;
+    return 0;
 }
 
 static bool do_show(int argc, char *argv[])
 {
-    if (argc != 1) {
-        report(1, "%s takes no arguments", argv[0]);
-        return false;
-    }
-    return show_queue(0);
+    return 0;
 }
 
 static bool do_shuffle(int argc, char *argv[])
 {
-    if (argc != 1) {
-        report(1, "%s takes no arguments", argv[0]);
-        return false;
-    }
-
-    if (!l_meta.l)
-        report(3, "Warning: Try to access null queue");
-    error_check();
-
-    if (exception_setup(true))
-        q_shuffle(l_meta.l);
-    exception_cancel();
-
-    show_queue(3);
-    return !error_check();
+    return 0;
 }
 
 static void console_init()
