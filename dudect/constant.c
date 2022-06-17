@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 #include "cpucycles.h"
 #include "queue.h"
 #include "random.h"
@@ -63,8 +64,8 @@ void prepare_inputs(uint8_t *input_data, uint8_t *classes)
     }
 }
 
-void measure(int64_t *before_ticks,
-             int64_t *after_ticks,
+void measure(struct timespec *before_ticks,
+             struct timespec *after_ticks,
              uint8_t *input_data,
              int mode)
 {
@@ -79,9 +80,9 @@ void measure(int64_t *before_ticks,
             dut_insert_head(
                 get_random_string(),
                 *(uint16_t *) (input_data + i * chunk_size) % 10000);
-            before_ticks[i] = cpucycles();
+            clock_gettime(CLOCK_MONOTONIC, &before_ticks[i]);
             dut_insert_head(s, 1);
-            after_ticks[i] = cpucycles();
+            clock_gettime(CLOCK_MONOTONIC, &after_ticks[i]);
             dut_free();
         }
         break;
@@ -92,9 +93,9 @@ void measure(int64_t *before_ticks,
             dut_insert_head(
                 get_random_string(),
                 *(uint16_t *) (input_data + i * chunk_size) % 10000);
-            before_ticks[i] = cpucycles();
+            clock_gettime(CLOCK_MONOTONIC, &before_ticks[i]);
             dut_insert_tail(s, 1);
-            after_ticks[i] = cpucycles();
+            clock_gettime(CLOCK_MONOTONIC, &after_ticks[i]);
             dut_free();
         }
         break;
@@ -104,9 +105,9 @@ void measure(int64_t *before_ticks,
             dut_insert_head(
                 get_random_string(),
                 *(uint16_t *) (input_data + i * chunk_size) % 10000);
-            before_ticks[i] = cpucycles();
+            clock_gettime(CLOCK_MONOTONIC, &before_ticks[i]);
             element_t *e = q_remove_head(l, NULL, 0);
-            after_ticks[i] = cpucycles();
+            clock_gettime(CLOCK_MONOTONIC, &after_ticks[i]);
             if (e)
                 q_release_element(e);
             dut_free();
@@ -118,9 +119,9 @@ void measure(int64_t *before_ticks,
             dut_insert_head(
                 get_random_string(),
                 *(uint16_t *) (input_data + i * chunk_size) % 10000);
-            before_ticks[i] = cpucycles();
+            clock_gettime(CLOCK_MONOTONIC, &before_ticks[i]);
             element_t *e = q_remove_tail(l, NULL, 0);
-            after_ticks[i] = cpucycles();
+            clock_gettime(CLOCK_MONOTONIC, &after_ticks[i]);
             if (e)
                 q_release_element(e);
             dut_free();
@@ -132,9 +133,9 @@ void measure(int64_t *before_ticks,
             dut_insert_head(
                 get_random_string(),
                 *(uint16_t *) (input_data + i * chunk_size) % 10000);
-            before_ticks[i] = cpucycles();
+            clock_gettime(CLOCK_MONOTONIC, &before_ticks[i]);
             dut_size(1);
-            after_ticks[i] = cpucycles();
+            clock_gettime(CLOCK_MONOTONIC, &after_ticks[i]);
             dut_free();
         }
     }

@@ -58,11 +58,12 @@ static void __attribute__((noreturn)) die(void)
 }
 
 static void differentiate(int64_t *exec_times,
-                          const int64_t *before_ticks,
-                          const int64_t *after_ticks)
+                           struct timespec *before_ticks,
+                           struct timespec *after_ticks)
 {
     for (size_t i = 0; i < n_measure; i++)
-        exec_times[i] = after_ticks[i] - before_ticks[i];
+        exec_times[i] =  (after_ticks[i].tv_sec - before_ticks[i].tv_sec) * 1e9 +
+         (after_ticks[i].tv_nsec - before_ticks[i].tv_nsec);
 }
 
 static void update_statistics(const int64_t *exec_times, uint8_t *classes)
@@ -119,8 +120,10 @@ static bool report(void)
 
 static bool doit(int mode)
 {
-    int64_t *before_ticks = calloc(n_measure + 1, sizeof(int64_t));
-    int64_t *after_ticks = calloc(n_measure + 1, sizeof(int64_t));
+    struct timespec *before_ticks = calloc(n_measure + 1, sizeof(struct timespec));
+    struct timespec *after_ticks = calloc(n_measure + 1, sizeof(struct timespec));
+    // int64_t *before_ticks = calloc(n_measure + 1, sizeof(int64_t));
+    // int64_t *after_ticks = calloc(n_measure + 1, sizeof(int64_t));
     int64_t *exec_times = calloc(n_measure, sizeof(int64_t));
     uint8_t *classes = calloc(n_measure, sizeof(uint8_t));
     uint8_t *input_data = calloc(n_measure * chunk_size, sizeof(uint8_t));

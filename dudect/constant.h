@@ -1,5 +1,6 @@
 #ifndef DUDECT_CONSTANT_H
 #define DUDECT_CONSTANT_H
+#include <time.h>
 
 #include <stdint.h>
 #define dut_new() ((void) (l = q_new()))
@@ -28,8 +29,8 @@
 
 void init_dut();
 void prepare_inputs(uint8_t *input_data, uint8_t *classes);
-void measure(int64_t *before_ticks,
-             int64_t *after_ticks,
+void measure(struct timespec *before_ticks,
+             struct timespec *after_ticks,
              uint8_t *input_data,
              int mode);
 
