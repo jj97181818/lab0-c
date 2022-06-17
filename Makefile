@@ -40,6 +40,16 @@ OBJS := qtest.o report.o console.o harness.o queue.o \
 
 deps := $(OBJS:%.o=.%.o.d)
 
+OBJS2 := report.o console.o harness.o queue.o \
+        random.o dudect/constant.o dudect/fixture.o dudect/ttest.o \
+        linenoise.o tinyweb.o list_sort.o dudect/test.o
+
+deps2 := $(OBJS:%.o=.%.o.d)
+
+testConstantTime: $(OBJS2)
+	$(VECHO) "  LD\t$@\n"
+	$(Q)$(CC) $(LDFLAGS) -o $@ $^ -lm
+
 qtest: $(OBJS)
 	$(VECHO) "  LD\t$@\n"
 	$(Q)$(CC) $(LDFLAGS) -o $@ $^ -lm
